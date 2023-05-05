@@ -1,0 +1,11 @@
+templates:
+  scm-init: git
+  params:
+    # author-name: 
+    # author-email: 
+    # category: Experiment
+    # copyright: 
+    # github-username: 
+
+# default-template: /full/path/to/my.hsfiles
+

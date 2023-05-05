@@ -1,0 +1,275 @@
+{-# START_FILE package.yaml #-}
+name:                {{name}}
+version:             0.1.0.0
+github:              "{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}"
+license:             BSD3
+author:              "{{author-name}}{{^author-name}}Author name here{{/author-name}}"
+maintainer:          "{{author-email}}{{^author-email}}example@example.com{{/author-email}}"
+copyright:           "{{copyright}}{{^copyright}}{{year}}{{^year}}2023{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            {{category}}{{^category}}Web{{/category}}
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- unicode-show
+- bytestring
+- utf8-string
+- time
+- hspec
+- main-tester
+- doctest
+- array
+- containers
+- free
+- recursion-schemes
+
+language: GHC2021
+
+default-extensions:
+- LambdaCase
+- MultiWayIf
+- NPlusKPatterns
+- OverloadedStrings
+- NoStarIsType
+- TypeFamilyDependencies
+- TypeInType
+- UndecidableInstances
+
+ghc-options:
+- -Wall
+- -Wno-unticked-promoted-constructors
+- -Wno-unused-imports
+- -Wno-unused-top-binds
+- -Wno-orphans
+
+library:
+  source-dirs: src
+
+executables:
+  {{name}}:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -rtsopts
+    # - -threaded
+    # - -with-rtsopts=-N
+    dependencies:
+    - {{name}}
+
+tests:
+  {{name}}-test:
+    main:                spec.hs
+    source-dirs:         test
+    # ghc-options:
+    # - -threaded
+    # - -rtsopts
+    # - -with-rtsopts=-N
+    dependencies:
+    - {{name}}
+    - hspec
+    - main-tester
+
+  {{name}}-doctest:
+    main:                doctests.hs
+    source-dirs:         test
+    # ghc-options:
+    # - -threaded
+    # - -rtsopts
+    # - -with-rtsopts=-N
+    dependencies:
+    - {{name}}
+    - doctest
+
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    - path: "./test/spec.hs"
+    component: "{{name}}:test:{{name}}-test"
+  
+    - path: "./test/LibSpec.hs"
+    component: "{{name}}:test:{{name}}-test"
+  
+    - path: "./test/doctests.hs"
+    component: "{{name}}:test:{{name}}-doctest"
+
+    - path: "./app/Main.hs"
+    component: "{{name}}:exe:{{name}}"
+
+    - path: "./src/Lib.hs"
+    component: "{{name}}:lib"
+
+{-# START_FILE start_programming #-}
+#!/bin/zsh
+
+if [ $(pgrep "script") ]; then
+  exit 0
+else
+  script -a -f -c zsh programming_session.log
+fi
+
+{-# START_FILE Setup.hs #-}
+import Distribution.Simple
+main = defaultMain
+
+{-# START_FILE src/Lib.hs #-}
+-- # 雛形モジュール
+-- このファイルは`stack new`コマンドで自動的に`src/`に挿入されます
+-- 
+-- ## 言語拡張と`module`宣言
+-- 最低限の指定をしてある
+{- |
+module:       Lib
+copyright:    (c) Nobuo Yamashita 2022
+license:      BSD-3
+maintainer:   nobsun@sampou.org
+stability:    experimental
+-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+module Lib
+    ( someFunc
+    ) where
+
+-- ## `doctest`のための記述と定義本体
+-- テストは失敗するように書いてある
+
+{- | 
+「なんか関数」を標準出力に印字する
+>>> someFunc
+なんか関数
+-}
+someFunc :: IO ()
+someFunc = putStrLn "なんか函数"
+
+{-# START_FILE test/spec.hs #-}
+{-# OPTIONS -F -pgmF hspec-discover #-}
+
+{-# START_FILE test/LibSpec.hs #-}
+{-# LANGUAGE OverloadedStrings #-}
+module LibSpec
+  ( spec
+  ) where
+
+import Data.String
+import qualified Codec.Binary.UTF8.String as U
+import qualified Data.ByteString as B
+import Test.Main
+import Test.Hspec
+import Text.Show.Unicode
+import Lib
+
+newtype UString a = UString a deriving Eq
+
+ustring :: B.ByteString -> UString String
+ustring = UString . U.decode . B.unpack
+
+instance IsString a => IsString (UString a) where
+  fromString = UString . fromString
+  
+instance Show a => Show (UString a) where
+  show (UString s) = ushow s
+
+spec :: Spec
+spec = describe "someFunc" $ do
+  { it "「なんか関数」を標準出力に印字する." $ do
+    { result <- captureProcessResult Lib.someFunc
+    ; prExitCode result `shouldBe` ExitSuccess
+    ; prStderr result `shouldSatisfy` B.null
+    ; ustring (prStdout result) `shouldBe` "なんか関数\n"
+    }
+  }
+
+{-# START_FILE test/doctests.hs #-}
+module Main where
+
+import Test.DocTest
+
+main :: IO ()
+main = doctest ["src/Lib.hs"]
+
+{-# START_FILE app/Main.hs #-}
+module Main where
+
+import Lib
+
+main :: IO ()
+main = someFunc
+
+{-# START_FILE README.md #-}
+# {{name}}
+
+{-# START_FILE ChangeLog.md #-}
+# Changelog for {{name}}
+
+## Unreleased changes
+
+{-# START_FILE LICENSE #-}
+Copyright {{author-name}}{{^author-name}}Author name here{{/author-name}} (c) {{year}}{{^year}}2022{{/year}}
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of {{author-name}}{{^author-name}}Author name here{{/author-name}} nor the names of other
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+{-# START_FILE .gitignore #-}
+.stack-work/
+dist-new/
+{{name}}.cabal
+*.log
+core
+*.hi
+*.o
+*~
+
+{-# START_FILE .ghci #-}
+import Data.Time
+_prompt _ n = (utcToLocalTime <$> getCurrentTimeZone <*> getCurrentTime) >>= print >> return ">>> "
+:set prompt-function _prompt
+import Text.Show.Unicode
+:set -interactive-print=uprint
+:set -XGHC2021 -XLambdaCase -XMultiWayIf -XNPlusKPatterns -XOverloadedStrings
+:set -XNoStarIsType -XTypeFamilyDependencies -XTypeInType -XUndecidableInstances
+:set -XImplicitParams -XNoFieldSelectors -XDuplicateRecordFields -XOverloadedRecordDot
+:! alias catn='cat -n'
+:set editor catn
+import Text.Printf
+:def! l (\ s -> readFile s >>= sequence . (zipWith (printf "%4d    %s\n") [(1::Int)..]) . lines >> return (unwords ["::l", s]))
+:def! r (\ _ -> return "::e")
