@@ -7,5 +7,5 @@ templates:
     # copyright: 
     # github-username: 
 
-# default-template: /full/path/to/my.hsfiles
+default-template: /home/ユーザー名/.stack/templates/my.hsfiles
 
