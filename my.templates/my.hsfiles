@@ -109,8 +109,15 @@ cradle:
     - path: "./src/Lib.hs"
     component: "{{name}}:lib"
 
+{-# START_FILE stack.yaml #-}
+resolver: lts-20.20
+packages:
+- .
+
+# extra-deps: []
+
 {-# START_FILE start_programming #-}
-#!/bin/zsh
+#!/bin/bash
 
 if [ $(pgrep "script") ]; then
   exit 0
